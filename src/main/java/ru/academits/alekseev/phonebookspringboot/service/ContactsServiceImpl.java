@@ -2,6 +2,7 @@ package ru.academits.alekseev.phonebookspringboot.service;
 
 import org.springframework.stereotype.Service;
 import ru.academits.alekseev.phonebookspringboot.converter.ContactsConverter;
+import ru.academits.alekseev.phonebookspringboot.data.Contact;
 import ru.academits.alekseev.phonebookspringboot.data.ContactsRepository;
 import ru.academits.alekseev.phonebookspringboot.dto.BaseResponse;
 import ru.academits.alekseev.phonebookspringboot.dto.ContactDto;
@@ -31,23 +32,35 @@ public class ContactsServiceImpl implements ContactsService {
             return validationResult;
         }
 
-        return contactsRepository.createContact(contactsConverter.convertToModel(contact));
+        contactsRepository.createContact(contactsConverter.convertToModel(contact));
+
+        return BaseResponse.success();
     }
 
     @Override
     public BaseResponse editContact(ContactDto contact) {
-        BaseResponse validationResult = validateContact(contact);
+        try {
+            BaseResponse validationResult = validateContact(contact);
 
-        if (!validationResult.isSuccess()) {
-            return validationResult;
+            if (!validationResult.isSuccess()) {
+                return validationResult;
+            }
+
+            if (!contactsRepository.editContact(contactsConverter.convertToModel(contact))) {
+                throw new IllegalAccessException("Contact not found");
+            }
+
+            return BaseResponse.success();
+        } catch (IllegalAccessException e) {
+            return BaseResponse.error(e.getMessage());
         }
-
-        return contactsRepository.editContact(contactsConverter.convertToModel(contact));
     }
 
     @Override
     public BaseResponse deleteContact(int id) {
-        return contactsRepository.deleteContact(id);
+        contactsRepository.deleteContact(id);
+
+        return BaseResponse.success();
     }
 
     private BaseResponse validateContact(ContactDto contact) {
@@ -67,10 +80,23 @@ public class ContactsServiceImpl implements ContactsService {
             return BaseResponse.error("Phone is empty or null");
         }
 
-        BaseResponse phoneExistsValidationResult = contactsRepository.phoneExistsValidation(contact.getPhone());
+        BaseResponse phoneValidationResult = validatePhone(contact.getPhone());
 
-        if (!phoneExistsValidationResult.isSuccess()) {
-            return phoneExistsValidationResult;
+        if (!phoneValidationResult.isSuccess()) {
+            return phoneValidationResult;
+        }
+
+        return BaseResponse.success();
+    }
+
+    private BaseResponse validatePhone(String phone) {
+        List<Contact> contacts = contactsRepository.getContacts(null);
+
+        boolean phoneExists = contacts.stream()
+                .anyMatch(c -> c.getPhone().equals(phone));
+
+        if (phoneExists) {
+            return BaseResponse.error("Phone already exists");
         }
 
         return BaseResponse.success();
