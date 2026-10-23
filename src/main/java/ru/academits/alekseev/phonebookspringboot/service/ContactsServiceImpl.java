@@ -1,5 +1,6 @@
 package ru.academits.alekseev.phonebookspringboot.service;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import ru.academits.alekseev.phonebookspringboot.converter.ContactsConverter;
 import ru.academits.alekseev.phonebookspringboot.data.Contact;
@@ -9,6 +10,7 @@ import ru.academits.alekseev.phonebookspringboot.dto.ContactDto;
 
 import java.util.List;
 
+@Slf4j
 @Service
 public class ContactsServiceImpl implements ContactsService {
     private final ContactsRepository contactsRepository;
@@ -21,6 +23,8 @@ public class ContactsServiceImpl implements ContactsService {
 
     @Override
     public List<ContactDto> getContacts(String term) {
+        log.debug("getContacts({})", term);
+
         return contactsConverter.convertToDto(contactsRepository.getContacts(term));
     }
 
@@ -29,10 +33,13 @@ public class ContactsServiceImpl implements ContactsService {
         BaseResponse validationResult = validateContact(contact);
 
         if (!validationResult.isSuccess()) {
+            log.error("createContact({})", validationResult);
+
             return validationResult;
         }
 
         contactsRepository.createContact(contactsConverter.convertToModel(contact));
+        log.debug("createContact({})", contact);
 
         return BaseResponse.success();
     }
@@ -43,6 +50,8 @@ public class ContactsServiceImpl implements ContactsService {
             BaseResponse validationResult = validateContact(contact);
 
             if (!validationResult.isSuccess()) {
+                log.error("editContact({})", validationResult);
+
                 return validationResult;
             }
 
@@ -50,8 +59,12 @@ public class ContactsServiceImpl implements ContactsService {
                 throw new IllegalAccessException("Contact not found");
             }
 
+            log.debug("editContact({})", contact);
+
             return BaseResponse.success();
         } catch (IllegalAccessException e) {
+            log.error("editContact({})", contact, e);
+
             return BaseResponse.error(e.getMessage());
         }
     }
@@ -59,32 +72,45 @@ public class ContactsServiceImpl implements ContactsService {
     @Override
     public BaseResponse deleteContact(int id) {
         contactsRepository.deleteContact(id);
+        log.debug("deleteContact({})", id);
 
         return BaseResponse.success();
     }
 
     private BaseResponse validateContact(ContactDto contact) {
         if (contact == null) {
+            log.error("validateContact(null)");
+
             return BaseResponse.error("Contact is null");
         }
 
         if (contact.getSurname() == null || contact.getSurname().isBlank()) {
+            log.error("validateContact({})", contact);
+
             return BaseResponse.error("Surname is empty or null");
         }
 
         if (contact.getName() == null || contact.getName().isBlank()) {
+            log.error("validateContact({})", contact);
+
             return BaseResponse.error("Name is empty or null");
         }
 
         if (contact.getPhone() == null || contact.getPhone().isBlank()) {
+            log.error("validateContact({})", contact);
+
             return BaseResponse.error("Phone is empty or null");
         }
 
         BaseResponse phoneValidationResult = validatePhone(contact.getPhone());
 
         if (!phoneValidationResult.isSuccess()) {
+            log.error("validateContact({})", phoneValidationResult);
+
             return phoneValidationResult;
         }
+
+        log.debug("validateContact({})", contact);
 
         return BaseResponse.success();
     }
@@ -96,8 +122,12 @@ public class ContactsServiceImpl implements ContactsService {
                 .anyMatch(c -> c.getPhone().equals(phone));
 
         if (phoneExists) {
+            log.error("validatePhone({})", phone);
+
             return BaseResponse.error("Phone already exists");
         }
+
+        log.debug("validatePhone({})", phone);
 
         return BaseResponse.success();
     }
