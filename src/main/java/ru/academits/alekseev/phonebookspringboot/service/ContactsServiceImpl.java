@@ -1,14 +1,12 @@
 package ru.academits.alekseev.phonebookspringboot.service;
 
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import ru.academits.alekseev.phonebookspringboot.converter.ContactsConverter;
 import ru.academits.alekseev.phonebookspringboot.data.Contact;
 import ru.academits.alekseev.phonebookspringboot.data.ContactsRepository;
 import ru.academits.alekseev.phonebookspringboot.dto.BaseResponse;
 import ru.academits.alekseev.phonebookspringboot.dto.ContactDto;
-import ru.academits.alekseev.phonebookspringboot.job.ContactCleanupJob;
 
 import java.util.List;
 
@@ -17,12 +15,10 @@ import java.util.List;
 public class ContactsServiceImpl implements ContactsService {
     private final ContactsRepository contactsRepository;
     private final ContactsConverter contactsConverter;
-    private final ContactCleanupJob contactCleanupJob;
 
-    public ContactsServiceImpl(ContactsRepository contactsRepository, ContactsConverter contactsConverter, ContactCleanupJob contactCleanupJob) {
+    public ContactsServiceImpl(ContactsRepository contactsRepository, ContactsConverter contactsConverter) {
         this.contactsRepository = contactsRepository;
         this.contactsConverter = contactsConverter;
-        this.contactCleanupJob = contactCleanupJob;
     }
 
     @Override
@@ -114,17 +110,5 @@ public class ContactsServiceImpl implements ContactsService {
         }
 
         return BaseResponse.success();
-    }
-
-    @Scheduled(fixedRate = 10000)
-    public void cleanup() {
-        List<Contact> contacts = contactsRepository.getContacts(null);
-
-        if (contacts.isEmpty()) {
-            log.info("No contacts found");
-            return;
-        }
-
-        contactCleanupJob.cleanup(contacts);
     }
 }

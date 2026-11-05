@@ -1,9 +1,11 @@
 package ru.academits.alekseev.phonebookspringboot.job;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
-import ru.academits.alekseev.phonebookspringboot.data.Contact;
-import ru.academits.alekseev.phonebookspringboot.data.ContactsRepository;
+
+import ru.academits.alekseev.phonebookspringboot.dto.ContactDto;
+import ru.academits.alekseev.phonebookspringboot.service.ContactsService;
 
 import java.util.List;
 import java.util.Random;
@@ -11,17 +13,25 @@ import java.util.Random;
 @Slf4j
 @Component
 public class ContactCleanupJob {
-    private final ContactsRepository contactsRepository;
+    private final ContactsService contactsService;
     private static final Random random = new Random();
 
-    public ContactCleanupJob(ContactsRepository contactsRepository) {
-        this.contactsRepository = contactsRepository;
+    public ContactCleanupJob(ContactsService contactsService) {
+        this.contactsService = contactsService;
     }
 
-    public void cleanup(List<Contact> contacts) {
-        Contact contact = contacts.get(random.nextInt(contacts.size()));
+    @Scheduled(fixedRate = 10000)
+    public void cleanup() {
+        List<ContactDto> contacts = contactsService.getContacts(null);
 
-        contactsRepository.deleteContact(contact.getId());
+        if (contacts.isEmpty()) {
+            log.info("No contacts found");
+            return;
+        }
+
+        ContactDto contact = contacts.get(random.nextInt(contacts.size()));
+        contactsService.deleteContact(contact.getId());
+
         log.info("Deleted contact {}", contact.getId());
     }
 }
