@@ -9,12 +9,14 @@ import ru.academits.alekseev.phonebookspringboot.dto.BaseResponse;
 import ru.academits.alekseev.phonebookspringboot.dto.ContactDto;
 
 import java.util.List;
+import java.util.Random;
 
 @Slf4j
 @Service
 public class ContactsServiceImpl implements ContactsService {
     private final ContactsRepository contactsRepository;
     private final ContactsConverter contactsConverter;
+    private static final Random random = new Random();
 
     public ContactsServiceImpl(ContactsRepository contactsRepository, ContactsConverter contactsConverter) {
         this.contactsRepository = contactsRepository;
@@ -71,6 +73,21 @@ public class ContactsServiceImpl implements ContactsService {
         log.debug("deleteContact({})", id);
 
         return BaseResponse.success();
+    }
+
+    @Override
+    public void deleteRandomContact() {
+        List<ContactDto> contacts = getContacts(null);
+
+        if (contacts.isEmpty()) {
+            log.info("No contacts found");
+            return;
+        }
+
+        ContactDto contact = contacts.get(random.nextInt(contacts.size()));
+        deleteContact(contact.getId());
+
+        log.info("deleteContact({})", contact);
     }
 
     private BaseResponse validateContact(ContactDto contact) {

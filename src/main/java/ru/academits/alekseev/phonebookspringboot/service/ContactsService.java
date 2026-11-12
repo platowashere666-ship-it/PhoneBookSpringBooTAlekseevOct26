@@ -13,4 +13,6 @@ public interface ContactsService {
     BaseResponse editContact(ContactDto contact);
 
     BaseResponse deleteContact(int id);
+
+    void deleteRandomContact();
 }
